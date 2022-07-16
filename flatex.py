@@ -3,7 +3,7 @@ from fractions import Fraction
 
 FILENAME_RE = re.compile(r"^(\d\d\d\d)(\d\d)(\d\d)_")
 
-def do_import(input_path, cash, depot, fees, gains, commodities, prices):
+def do_import(input_path, cash, depot, fees, gains, exchange, commodities, prices):
     if "kauffondszertifikate" in input_path.lower():
         text = textract.process(input_path, method='pdftotext', layout=True).decode("UTF-8")
         if "Wertpapierabrechnung Kauf Fonds/Zertifikate" in text:
@@ -45,15 +45,19 @@ def do_import(input_path, cash, depot, fees, gains, commodities, prices):
                 lines.append((gains, values.tax, "EUR"))
             if gain != 0:
                 lines.append((gains, -gain, "EUR"))
-            lines.append((depot + ":" + commodity, -values.amount, (commodities[commodity.lower()], buy_price * values.amount, "EUR")))
+            lines.append((depot + ":" + commodity, -values.amount, commodities[commodity.lower()]))
+            lines.append((exchange + ":" + commodity, -buy_price * values.amount, "EUR"))
+            lines.append((exchange + ":" + commodity, values.amount, commodities[commodity.lower()]))
 
             return [utils.Raw(input_path, values.date, description, lines)]
         else:
             lines = []
             lines.append((cash, values.cash, "EUR"))
+            lines.append((exchange + ":" + commodity, -values.cash - fees_amount, "EUR"))
+            lines.append((exchange + ":" + commodity, -values.amount, commodities[commodity.lower()]))
+            lines.append((depot + ":" + commodity, values.amount, commodities[commodity.lower()]))
             if fees_amount != 0:
                 lines.append((fees, fees_amount, "EUR"))
-            lines.append((depot + ":" + commodity, values.amount, (commodities[commodity.lower()], -values.cash - fees_amount, "EUR")))
             return [utils.Raw(input_path, values.date, description, lines)]
 
     elif "fondsthesaurierung" in input_path.lower():
@@ -147,10 +151,10 @@ def find_prices(pool, source):
             prices[subject].append((id, date, last_amount + amount, last_value * (last_amount + amount) / last_amount))
     return prices
 
-def main(pool, source, cash, depot, fees, gains, **kwargs):
+def main(pool, source, cash, depot, fees, gains, exchange, **kwargs):
     # Unfortunately, flatex does not have the buy price (or the gains) of a sale in its documents.
     # Therefore, I have to go through all buy/sell transactions first to find the commodities' buy-prices for each point in time.
     prices = find_prices(pool, source)
     commodities = dict((k[4:], v) for k, v in kwargs.items() if k.startswith("wkn."))
     files = [f for f in glob.glob(os.path.join(source, "*.pdf")) if date_ok(f)]
-    return list(itertools.chain.from_iterable(pool.starmap(do_import, ((f, cash, depot, fees, gains, commodities, prices) for f in files))))
+    return list(itertools.chain.from_iterable(pool.starmap(do_import, ((f, cash, depot, fees, gains, exchange, commodities, prices) for f in files))))

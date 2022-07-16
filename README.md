@@ -48,6 +48,7 @@
         depot = Aktiva:Geldanlagen:Flatex:Depot
         fees = Aufwendungen:Sonstiges:Bankgebühren
         gains = Erträge:Zinsen und Dividenden
+        exchange = Devisen:Flatex
         wkn.A1JX52 = VGWL
         wkn.A111X9 = IS_N
         wkn.A14YPA = IBCZ
@@ -86,6 +87,9 @@
 
         account Buchungsfehler  ; type:Equity
         account Unbekannt  ; type:Equity
+
+        account Devisen  ; type:Equity
+        ...
 
         commodity 1.000,00 EUR  ; €
         commodity 1.000,0 VGWL  ; Vanguard FTSE All-World UCITS ETF
