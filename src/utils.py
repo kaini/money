@@ -13,7 +13,7 @@ def write_booking(fp, account2, account1, date, description, amount, commodity):
     if isinstance(account2, str):
         account2 = ((account2, None, None),)
 
-    fp.write(f"{date} {description}\n")
+    fp.write(f"{date} {sanitize_description(description)}\n")
     fp.write(f"  {account1}  {format_exact(amount, commodity)}\n")
     for subaccount, subamount, subcommodity in account2:
         if subamount is None:
@@ -66,6 +66,9 @@ def format_exact(amount, commodity, min_decimal=None):
     result += digits
 
     return f"{result} {commodity}"
+
+def sanitize_description(text):
+    return text.replace('\r\n', ' | ').replace('\r', ' | ').replace('\n', ' | ')
 
 def format_date(date):
     return str(date)
