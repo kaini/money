@@ -58,7 +58,11 @@ def main():
     
     if not commodity_prices:
         print("[FETCHING PRICES]")
-        commodity_prices = fetch_prices.fetch(config["prices"]["alphavantagekey"], dict(tuple(v.split()) for k, v in config["prices"].items() if k.startswith("load.")))
+        alphavantage_api_key = config["prices"]["alphavantagekey"]
+        price_load_entries = [[k, *v.split()] for k, v in config["prices"].items() if "." in k]
+        equity_entries = [{'type': 'EQUITY', 'key': v[1], 'symbol': v[2], 'currency': v[3]} for v in price_load_entries if v[0].startswith("equity.")]
+        fx_entries = [{'type': 'FX', 'from_symbol': v[1], 'to_symbol': v[2]} for v in price_load_entries if v[0].startswith("fx.")]
+        commodity_prices = fetch_prices.fetch(alphavantage_api_key, equity_entries + fx_entries)
     with open(os.path.join(base_path, "output", "prices.journal"), "w", encoding="UTF-8") as fp:
         fp.write(commodity_prices)
     output_files[os.path.join("output", "prices.journal")] = datetime.date(1000, 1, 1)
