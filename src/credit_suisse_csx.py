@@ -1,4 +1,4 @@
-import textract, datetime, re, utils, os, glob, itertools
+import textract, re, utils, os, glob, itertools
 
 
 TABLE_HEADER_RE=re.compile(r"^\s*(Date)\s+(Text)\s+(Debit)\s+(Credit)\s+(Value)\s+(Balance)\s*$")
@@ -106,5 +106,4 @@ def main(pool, source, account, iban, **kwargs):
     files = []
     files += glob.glob(os.path.join(source, "*.pdf"))
     files += glob.glob(os.path.join(source, "*.PDF"))
-    #return list(itertools.chain.from_iterable(pool.starmap(do_import, ((f, account, iban) for f in files))))
-    return [e for f in files for e in do_import(f, account, iban)]
+    return list(itertools.chain.from_iterable(pool.starmap(do_import, ((f, account, iban) for f in files))))
