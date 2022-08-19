@@ -83,6 +83,32 @@ def import_text(text, fields):
 def parse_date_dmy(match):
     return datetime.date(year=int(match[3]), month=int(match[2]), day=int(match[1]))
 
+def parse_date_ddmmyyyy(ddmmyyyy):
+    return datetime.date(year=int(ddmmyyyy[2]), month=int(ddmmyyyy[1]), day=int(ddmmyyyy[0]))
+
+# We have learnt nothing from y2k
+def parse_date_ddmmyy_without_century(statement_start_year, statement_end_year, ddmmyy):
+    assert (statement_end_year - statement_start_year) in [0, 1], "Non consecutive statement years are not supported"
+    statement_start_century = int(str(statement_start_year)[0:2])
+    statement_start_yy = int(str(statement_start_year)[2:4])
+    statement_end_yy = int(str(statement_end_year)[2:4])
+    statement_end_century = int(str(statement_end_year)[0:2])
+    yy = int(ddmmyy[2])
+    mm = int(ddmmyy[1])
+    dd = int(ddmmyy[0])
+    yyyy = None
+    if yy == statement_start_yy:
+        yyyy = int(str(statement_start_century) + str(yy))
+    elif yy == statement_end_yy:
+        yyyy = int(str(statement_end_century) + str(yy))
+    else:
+        assert False, "Statement entry date was neither in start nor in end year"
+
+    return datetime.date(year=yyyy, month=mm, day=dd)
+
+def parse_num_ch(str):
+    return Fraction(str.replace("'", ""))
+
 def parse_num_de(match):
     return Fraction(match[1].replace(".", "").replace(",", "."))
 
