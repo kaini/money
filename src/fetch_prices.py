@@ -1,5 +1,7 @@
 import requests
 
+from utils import format_exact, parse_num_us
+
 QUERY_URL = "https://www.alphavantage.co/query"
 
 def fetch(api_key, load):
@@ -19,8 +21,8 @@ def fetch(api_key, load):
 			})
 			result = result.json()
 			for date, values in result["Time Series (Daily)"].items():
-				price = values['4. close'].replace(",", "").replace(".", ",")
-				output += f"P {date} {key} {price} {currency}\n"
+				price = parse_num_us(values['4. close'])
+				output += f"P {date} {key} {format_exact(price, currency)} {currency}\n"
 		elif type == 'FX':
 			from_symbol = value['from_symbol']
 			to_symbol = value['to_symbol']
@@ -33,8 +35,8 @@ def fetch(api_key, load):
 			})
 			result = result.json()
 			for date, values in result["Time Series FX (Daily)"].items():
-				price = values['4. close'].replace(",", "").replace(".", ",")
-				output += f"P {date} {to_symbol} {price} {from_symbol}\n"
+				price = parse_num_us(values['4. close'])
+				output += f"P {date} {to_symbol} {format_exact(price, from_symbol)} {from_symbol}\n"
 		else:
 			assert False, "Unknown type"
 	return output
