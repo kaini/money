@@ -1,4 +1,5 @@
 import multiprocessing, os, shutil, datetime, configparser, importlib, re, collections, utils, sys, fetch_prices
+from pprint import pprint
 
 def init_parsers(base_path, config):
     parsers = dict()
@@ -30,7 +31,7 @@ def parse_rules(base_path):
             raise Exception("Unknown rule syntax " + rule)
 
     def fallback(entry):
-        print("Warning: Had to apply fallback rule to entry", entry)
+        print(f"Warning: Had to apply fallback rule to entry: {utils.namedtuple_pformat(entry)}")
         return True
     result.append((fallback, "Unbekannt"))
 

@@ -1,13 +1,29 @@
+from pprint import pformat
 import re
 import datetime
 import collections
 from fractions import Fraction
 from decimal import Decimal
 from collections.abc import Iterable
+import sys
 
 Entry = collections.namedtuple("Entry", ("source", "account", "date", "text", "amount", "currency"))
 Assert = collections.namedtuple("Assert", ("source", "account", "date", "amount", "currency"))
 Raw = collections.namedtuple("Raw", ("source", "date", "text", "lines"))
+
+def namedtuple_pformat(tuple):
+    str = ""
+    str += type(tuple).__name__
+    str += "(\n"
+    indent = 2
+    fields = tuple._fields
+    longest_field_len = max([len(field) for field in fields])
+    for field in tuple._fields:
+        padding = (longest_field_len - len(field)) + 1
+        str += f"{' ' * indent}{field}{' ' * padding}= {pformat(getattr(tuple, field), compact=True, width=sys.maxsize)},\n"
+    str += ")"
+    return str
+
 
 def write_booking(fp, account2, account1, date, description, amount, commodity):
     if isinstance(account2, str):
