@@ -26,7 +26,7 @@ def parse_rules(base_path):
     for rule, account in rules["DEFAULT"].items():
         parts = rule.split("$")
         if parts[0] == "text":
-            result.append((lambda entry, regex=re.compile(parts[1], re.I): bool(regex.search(entry.text)), account))
+            result.append((lambda entry, regex=re.compile(parts[1], re.I | re.M | re.DOTALL): bool(regex.search(entry.text)), account))
         else:
             raise Exception("Unknown rule syntax " + rule)
 
