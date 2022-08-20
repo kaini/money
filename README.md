@@ -24,9 +24,11 @@
 
         [prices]
         alphavantagekey = XXXXXXXXXXXXXXXXXX
-        load.0 = IS_N IS3N.DEX  # hleder commodity <space> Alphavantage Key
-        load.1 = IBCZ IBCZ.DEX
-        load.2 = VGWL VGWL.DEX
+        equity.0 = IS_N IS3N.DEX  # hleder commodity <space> Alphavantage Key
+        equity.1 = IBCZ IBCZ.DEX
+        equity.2 = VGWL VGWL.DEX
+        fx.0 = USD EUR
+        fx.1 = CHF EUR
 
         [input.cash]
         parser = cash
@@ -62,7 +64,7 @@
         Each `input.*` section describes how the documents placed in `input/*/` should be processed. The `parser` key is the Python module that is going to be imported and called to handle the files. All other parameters are passed as-is to these modules.
     * A folder called `input`. This folder must exist and must be filled with the input documents, e.g., bank statements or CSV files in sub-folders. Each sub-folder can be processed by a singe input module.
     * A folder called `output`. This folder will be created is the output folder and will copy the structure of the input folder, except that all input documents will be replaced by hledger journals. `output/root.journal` is a hledger journal that imports all other journal files. **Do not edit files in this folder. It will be deleted and re-created on each run!**
-    * While this is up to you, a `main.journal` with the following structure is recommended as entry point for hledger: (Hint: Set the environment variable `LEDGER_FILE` to its path.)
+    * While this is up to you, a `main.journal` with the following structure is recommended as entry point for hledger: (Hint: Set the environment variable `LEDGER_FILE` to its path.) The `docker_run.sh` script automatically sets `LEDGER_FILE` to `/dest/main.journal`.
 
         ```
         account Aktiva  ; type:Asset
@@ -98,10 +100,13 @@
         include output/root.journal
         include special.journal  ; Used for special postings that have to be entered manually, e.g., your starting balances
         ```
-    * A small wrapper script to start `main.py` is handy. For example:
-        ```
-        docker run -it --rm -v x:\git\geld\haushaltsbuch:/code -v x:\git\geld\haushaltsbuch_home:/dest geld python3 /code/main.py /dest
-        ```
+    * Run scripts are provided for your convenience. The scripts are named `run_*.sh` and build and run the docker container.
+      They must be executed in the project directory, otherwise the volume mounts will not work correctly.
+      They all expect the destination directory (i.e. the directory containing the input data and `main.journal`) as their first argument e.g. `run_main.sh "$HOME/ledger"`.
+      - `run_main.sh` executes `src/main.py` and runs the data import.
+      - `run_bash.sh` spawns an interactive bash shell in the container.
+      - `run_hledger.sh` runs the `hledger` command. Arguments are passed through.
+      - `run_hledger_web.sh` starts an `hledger web` server.
 
 # A typical workflow at the end of the month
 
