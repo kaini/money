@@ -20,7 +20,10 @@ def namedtuple_pformat(tuple):
     longest_field_len = max([len(field) for field in fields])
     for field in tuple._fields:
         padding = (longest_field_len - len(field)) + 1
-        str += f"{' ' * indent}{field}{' ' * padding}= {pformat(getattr(tuple, field), compact=True, width=sys.maxsize)},\n"
+        value = getattr(tuple, field)
+        if type(value) == Fraction:
+            value = format_number_exact(value)
+        str += f"{' ' * indent}{field}{' ' * padding}= {pformat(value, compact=True, width=sys.maxsize)},\n"
     str += ")"
     return str
 
@@ -49,17 +52,22 @@ def format_exact(amount, commodity, min_decimal=None):
         dest, value, source = commodity
         return f"{format_exact(amount, dest, min_decimal)} @@ {format_exact(value, source, min_decimal)}"
 
-    if isinstance(amount, int):
-        amount = Decimal(amount) / Decimal(100)
-    else:
-        amount = Decimal(amount.numerator) / Decimal(amount.denominator)
-    
     if min_decimal is None:
         if commodity == "EUR":
             min_decimal = 2
         else:
             min_decimal = 0
 
+    result = format_number_exact(amount=amount, min_decimal=min_decimal)
+
+    return f"{result} {commodity}"
+
+def format_number_exact(amount, min_decimal=0):
+    if isinstance(amount, int):
+        amount = Decimal(amount) / Decimal(100)
+    else:
+        amount = Decimal(amount.numerator) / Decimal(amount.denominator)
+    
     sign, digits, exponent = amount.as_tuple()
     result = ""
 
@@ -81,7 +89,7 @@ def format_exact(amount, commodity, min_decimal=None):
             digits += "," + ("0" * min_decimal)
     result += digits
 
-    return f"{result} {commodity}"
+    return result
 
 def sanitize_description(text):
     return text.replace('\r\n', ' | ').replace('\r', ' | ').replace('\n', ' | ')
