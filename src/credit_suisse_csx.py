@@ -2,14 +2,14 @@ import textract, re, utils, os, glob, itertools
 
 
 TABLE_HEADER_RE=re.compile(r"^\s*(Date)\s+(Text)\s+(Debit)\s+(Credit)\s+(Value)\s+(Balance)\s*$")
-DATE_RE=re.compile(r"(\d\d)\.(\d\d).(\d\d)") # dd.mm.yy
-FULL_DATE_RE=re.compile(r"(\d\d)\.(\d\d).(\d\d\d\d)") # dd.mm.yyyy
+DATE_RE=re.compile(r"(\d\d)\.(\d\d)\.(\d\d)") # dd.mm.yy
+FULL_DATE_RE=re.compile(r"(\d\d)\.(\d\d)\.(\d\d\d\d)") # dd.mm.yyyy
 MONEY_RE=re.compile(r"(?:\d|'|\.)+") # 12'345.67
 STATEMENT_TIME_RE=re.compile(fr"^\s*Detailed account extract ({FULL_DATE_RE.pattern}) to ({FULL_DATE_RE.pattern})\s+Page.*$")
 IBAN_RE=re.compile(r"[A-Z]{2}\d{2} (?:\d{1,4} ?){4,}")
 STATEMENT_IBAN_RE=re.compile(fr"^\s*IBAN\s+({IBAN_RE.pattern})\s*V?\s*$")
 STATEMENT_CLOSING_BALANCE_RE=re.compile(fr"^\s*Closing balance\s+({MONEY_RE.pattern})\s*$")
-ENTRY_HEADER_RE=re.compile(fr"^\s*({DATE_RE.pattern})\s+(.*?)\s+({MONEY_RE.pattern})\s+({DATE_RE.pattern})\s+({MONEY_RE.pattern})\s*$")
+ENTRY_HEADER_RE=re.compile(fr"^\s*({DATE_RE.pattern})\s+(.*?)\s+({MONEY_RE.pattern})\s+({DATE_RE.pattern})(?:\s+({MONEY_RE.pattern}))?\s*$")
 ENTRY_CONTENT_RE=re.compile(fr"^\s*(\S.*?)\s*$")
 EMPTY_LINE_RE=re.compile(fr"^\s*$")
 
@@ -34,6 +34,7 @@ def do_import(input_path, ledger_account, iban):
         entry_header_match = ENTRY_HEADER_RE.match(line)
         entry_content_match = ENTRY_CONTENT_RE.match(line)
         empty_line_match = EMPTY_LINE_RE.match(line)
+
         if statement_closing_balance_match is not None:
             assert statement_closing_balance is None
             statement_closing_balance = utils.parse_num_ch(statement_closing_balance_match.group(1))
