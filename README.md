@@ -24,9 +24,9 @@
 
         [prices]
         alphavantagekey = XXXXXXXXXXXXXXXXXX
-        equity.0 = IS_N IS3N.DEX  # hleder commodity <space> Alphavantage Key
-        equity.1 = IBCZ IBCZ.DEX
-        equity.2 = VGWL VGWL.DEX
+        equity.0 = IS_N IS3N.DEX EUR # hleder commodity <space> Alphavantage Key <space> currency of the price
+        equity.1 = IBCZ IBCZ.DEX EUR
+        equity.2 = VGWL VGWL.DEX EUR
         fx.0 = USD EUR
         fx.1 = CHF EUR
 

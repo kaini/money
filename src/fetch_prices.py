@@ -22,7 +22,7 @@ def fetch(api_key, load):
 			result = result.json()
 			for date, values in result["Time Series (Daily)"].items():
 				price = parse_num_us(values['4. close'])
-				output += f"P {date} {key} {format_number_exact(price)} {currency}\n"
+				output += f"P {date} {key} {format_number_exact(price, 4)} {currency}\n"
 		elif type == 'FX':
 			from_symbol = value['from_symbol']
 			to_symbol = value['to_symbol']
@@ -36,7 +36,7 @@ def fetch(api_key, load):
 			result = result.json()
 			for date, values in result["Time Series FX (Daily)"].items():
 				price = parse_num_us(values['4. close'])
-				output += f"P {date} {from_symbol} {format_number_exact(price)} {to_symbol}\n"
+				output += f"P {date} {from_symbol} {format_number_exact(price, 4)} {to_symbol}\n"
 		else:
 			assert False, "Unknown type"
 	return output
