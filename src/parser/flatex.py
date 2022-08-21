@@ -17,13 +17,13 @@ def do_import(input_path, cash, depot, fees, gains, exchange, commodities, price
         values = utils.import_text(text, {
             "date": (r"Valuta\s+(\d\d)\.(\d\d)\.(\d\d\d\d)", utils.parse_date_dmy),
             "subject": (r"Nr\.([0-9/]+)\s+(?:Kauf|Verkauf).*\([A-Z0-9]+/([A-Z0-9]+)\)", lambda m: (re.sub(r"\s+", " ", m[0]), m[2], m[1])),
-            "amount": (r"Ausgeführt\s+:\s+([0-9,.-]+) St\.", utils.parse_num_de),
-            "value": (r"Kurswert\s+:\s+([0-9,.-]+) EUR", utils.parse_num_de),
-            "pcost": (r"Provision\s+:\s+([0-9,.-]+) EUR", utils.parse_num_de),
-            "ocost": (r"Eigene Spesen\s+:\s+([0-9,.-]+) EUR", utils.parse_num_de),
-            "fcost": (r"Fremde Spesen\s+:\s+([0-9,.-]+) EUR", utils.parse_num_de),
-            "tax": (r"Einbeh\. KESt\s+:\s+([0-9,.-]+) EUR", utils.parse_num_de),
-            "cash": (r"Endbetrag\s+:\s+([0-9,.-]+) EUR", utils.parse_num_de),
+            "amount": (r"Ausgeführt\s+:\s+([0-9,.-]+) St\.", utils.parse_num_de_from_match),
+            "value": (r"Kurswert\s+:\s+([0-9,.-]+) EUR", utils.parse_num_de_from_match),
+            "pcost": (r"Provision\s+:\s+([0-9,.-]+) EUR", utils.parse_num_de_from_match),
+            "ocost": (r"Eigene Spesen\s+:\s+([0-9,.-]+) EUR", utils.parse_num_de_from_match),
+            "fcost": (r"Fremde Spesen\s+:\s+([0-9,.-]+) EUR", utils.parse_num_de_from_match),
+            "tax": (r"Einbeh\. KESt\s+:\s+([0-9,.-]+) EUR", utils.parse_num_de_from_match),
+            "cash": (r"Endbetrag\s+:\s+([0-9,.-]+) EUR", utils.parse_num_de_from_match),
         })
         fees_amount = values.pcost + values.ocost + values.fcost
         description, commodity, id = values.subject
@@ -65,7 +65,7 @@ def do_import(input_path, cash, depot, fees, gains, exchange, commodities, price
         text = textract.process(input_path, method='pdftotext', layout=True).decode("UTF-8")
         values = utils.import_text(text, {
             "date": (r"Valuta\s+:\s+(\d\d)\.(\d\d)\.(\d\d\d\d)", utils.parse_date_dmy),
-            "cost": (r"Endbetrag\s+:\s+([0-9,.-]+) EUR", utils.parse_num_de),
+            "cost": (r"Endbetrag\s+:\s+([0-9,.-]+) EUR", utils.parse_num_de_from_match),
             "subject": (r"Nr\.[0-9/]+.*?\)", lambda m: re.sub(r"\s+", " ", m[0])),
         })
         return [utils.Raw(input_path, values.date, "Thesaurierung " + values.subject, ((cash, values.cost, "EUR"), (gains, None, None)))]
@@ -75,8 +75,8 @@ def do_import(input_path, cash, depot, fees, gains, exchange, commodities, price
             print("\t", input_path)
             values = utils.import_text(text, {
                 "date": (r"Rechnungsabschluss zum (\d\d)\.(\d\d)\.(\d\d\d\d)", utils.parse_date_dmy),
-                "cost": (r"Rechnungsabschluss:\s+([0-9.,-]+) EUR", utils.parse_num_de),
-                "sum": (r"Saldo nach Rechnungsabschluss.*?([0-9.,-]+) EUR", utils.parse_num_de),
+                "cost": (r"Rechnungsabschluss:\s+([0-9.,-]+) EUR", utils.parse_num_de_from_match),
+                "sum": (r"Saldo nach Rechnungsabschluss.*?([0-9.,-]+) EUR", utils.parse_num_de_from_match),
             })
             result = []
             if values.cost != 0:
@@ -90,7 +90,7 @@ def do_import(input_path, cash, depot, fees, gains, exchange, commodities, price
         text = textract.process(input_path, method='pdftotext', layout=True).decode("UTF-8")
         values = utils.import_text(text, {
             "date": (r"Valuta\s+:\s+(\d\d)\.(\d\d)\.(\d\d\d\d)", utils.parse_date_dmy),
-            "gain": (r"Endbetrag\s+:\s+([0-9.,-]+) EUR", utils.parse_num_de),
+            "gain": (r"Endbetrag\s+:\s+([0-9.,-]+) EUR", utils.parse_num_de_from_match),
             "subject": (r"Nr\..*?\)", lambda m: re.sub(r"\s+", " ", m[0])),
         })
         if values.gain != 0:
@@ -119,8 +119,8 @@ def find_buy_sell(input_path):
     fields = utils.import_text(text, {
         "date": (r"Valuta\s+(\d\d)\.(\d\d)\.(\d\d\d\d)", utils.parse_date_dmy),
         "subject": (r"Nr\.([0-9/]+)\s+(?:Kauf|Verkauf).*\([A-Z0-9]+/([A-Z0-9]+)\)", lambda m: (m[1], m[2])),
-        "amount": (r"Ausgeführt\s+:\s+([0-9,.-]+) St\.", utils.parse_num_de),
-        "value": (r"Kurswert\s+:\s+([0-9,.-]+) EUR", utils.parse_num_de),
+        "amount": (r"Ausgeführt\s+:\s+([0-9,.-]+) St\.", utils.parse_num_de_from_match),
+        "value": (r"Kurswert\s+:\s+([0-9,.-]+) EUR", utils.parse_num_de_from_match),
     })
     return (
         fields.subject[0],
