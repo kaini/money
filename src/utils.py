@@ -139,8 +139,11 @@ def parse_num_us(str):
 def parse_num_ch(str):
     return Fraction(str.replace("'", ""))
 
-def parse_num_de(match):
-    return Fraction(match[1].replace(".", "").replace(",", "."))
+def parse_num_de(str):
+    return Fraction(str.replace(".", "").replace(",", "."))
+
+def parse_num_de_from_match(match):
+    return parse_num_de(match[1])
 
 def parse_num_str(str):
     return Fraction(str.replace(",", "."))

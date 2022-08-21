@@ -5,7 +5,7 @@ def init_parsers(base_path, config):
     parsers = dict()
     for section in config.sections():
         if section.startswith("input."):
-            parser_module = importlib.import_module(config[section].get("parser"))
+            parser_module = importlib.import_module("parser." + config[section].get("parser"))
             name = section[len("input."):]
             source = os.path.join(base_path, "input", name)
             parser = lambda pool, source=source, parser_module=parser_module, kwargs=dict(config[section]): parser_module.main(pool=pool, source=source, **kwargs)

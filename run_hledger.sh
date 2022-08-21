@@ -2,6 +2,6 @@
 set -euo pipefail
 IFS=$'\n\t'
 
-ARG_1="$1"
+declare -a DEST_DIR="$1"
 shift
-DEST_DIR="$ARG_1" ./docker_run.sh hledger "$@"
+. ./docker_run.sh hledger "$@"
