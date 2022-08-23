@@ -134,7 +134,7 @@ def parse_date_ddmmyy_without_century(statement_start_year, statement_end_year, 
     return datetime.date(year=yyyy, month=mm, day=dd)
 
 def parse_num_us(str):
-    return Fraction(str)
+    return Fraction(str.replace(",", ""))
 
 def parse_num_ch(str):
     return Fraction(str.replace("'", ""))
