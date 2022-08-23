@@ -22,6 +22,10 @@
         ```
         [DEFAULT]
 
+        # optional formatting information
+        [format]
+        decimal_separator = ,
+
         [prices]
         alphavantagekey = XXXXXXXXXXXXXXXXXX
         equity.0 = IS_N IS3N.DEX EUR # hleder commodity <space> Alphavantage Key <space> currency of the price
