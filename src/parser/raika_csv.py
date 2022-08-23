@@ -1,6 +1,5 @@
 
 import csv, re, utils, os, glob, itertools
-from pprint import pprint
 
 DATE_RE = re.compile(r'(\d\d)\.(\d\d)\.(\d\d\d\d)')
 
