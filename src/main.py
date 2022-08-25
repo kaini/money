@@ -18,7 +18,7 @@ def delete_output(base_path):
         shutil.rmtree(path)
     os.mkdir(path)
 
-def parse_rules(base_path):
+def parse_rules(base_path, format_args):
     rules = configparser.ConfigParser(delimiters=("=",))
     rules.read(os.path.join(base_path, "rules.ini"), encoding="UTF-8")
 
@@ -31,7 +31,7 @@ def parse_rules(base_path):
             raise Exception("Unknown rule syntax " + rule)
 
     def fallback(entry):
-        print(f"Warning: Had to apply fallback rule to entry: {utils.namedtuple_pformat(entry)}")
+        print(f"Warning: Had to apply fallback rule to entry: {utils.namedtuple_pformat(entry, format_args)}")
         return True
     result.append((fallback, "Unbekannt"))
 
@@ -43,7 +43,12 @@ def main():
     config = configparser.ConfigParser()
     config.read(os.path.join(base_path, "config.ini"), encoding="UTF-8")
 
-    rules = parse_rules(base_path)
+    format_args = utils.DEFAULT_FORMAT_ARGS
+    if config.has_section('format'):
+        format_args = utils.FormatArgs(decimal_separator=config['format']['decimal_separator'])
+
+
+    rules = parse_rules(base_path, format_args)
 
     parsers = init_parsers(base_path, config)
     
@@ -63,7 +68,7 @@ def main():
         price_load_entries = [[k, *v.split()] for k, v in config["prices"].items() if "." in k]
         equity_entries = [{'type': 'EQUITY', 'key': v[1], 'symbol': v[2], 'currency': v[3]} for v in price_load_entries if v[0].startswith("equity.")]
         fx_entries = [{'type': 'FX', 'from_symbol': v[1], 'to_symbol': v[2]} for v in price_load_entries if v[0].startswith("fx.")]
-        commodity_prices = fetch_prices.fetch(alphavantage_api_key, equity_entries + fx_entries)
+        commodity_prices = fetch_prices.fetch(alphavantage_api_key, equity_entries + fx_entries, format_args)
     with open(os.path.join(base_path, "output", "prices.journal"), "w", encoding="UTF-8") as fp:
         fp.write(commodity_prices)
     output_files[os.path.join("output", "prices.journal")] = datetime.date(1000, 1, 1)
@@ -104,13 +109,13 @@ def main():
                         if len(parts) == 1:
                             destination.append((parts[0].strip(), None, None))
                         else:
-                            destination.append((parts[0].strip(), utils.parse_num_str(parts[1]), entry.currency))
+                            destination.append((parts[0].strip(), utils.parse_num_str(parts[1], format_args.decimal_separator), entry.currency))
 
-                    utils.write_booking(fp, destination, entry.account, entry.date, entry.text, entry.amount, entry.currency)
+                    utils.write_booking(fp, destination, entry.account, entry.date, entry.text, entry.amount, entry.currency, format_args)
                 elif isinstance(entry, utils.Assert):
-                    utils.write_assert(fp, entry.account, entry.date, entry.amount, entry.currency)
+                    utils.write_assert(fp, entry.account, entry.date, entry.amount, entry.currency, format_args)
                 elif isinstance(entry, utils.Raw):
-                    utils.write_booking(fp, entry.lines[1:], entry.lines[0][0], entry.date, entry.text, entry.lines[0][1], entry.lines[0][2])
+                    utils.write_booking(fp, entry.lines[1:], entry.lines[0][0], entry.date, entry.text, entry.lines[0][1], entry.lines[0][2], format_args)
                 else:
                     raise Exception("Unknown thing in entries: " + repr(entry))
                 output_files[dest_file] = max(output_files[dest_file], entry.date)

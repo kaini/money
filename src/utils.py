@@ -11,7 +11,10 @@ Entry = collections.namedtuple("Entry", ("source", "account", "date", "text", "a
 Assert = collections.namedtuple("Assert", ("source", "account", "date", "amount", "currency"))
 Raw = collections.namedtuple("Raw", ("source", "date", "text", "lines"))
 
-def namedtuple_pformat(tuple):
+FormatArgs = collections.namedtuple("FormatArgs", ("decimal_separator"))
+DEFAULT_FORMAT_ARGS = FormatArgs(decimal_separator=",")
+
+def namedtuple_pformat(tuple, format_args):
     str = ""
     str += type(tuple).__name__
     str += "(\n"
@@ -22,35 +25,35 @@ def namedtuple_pformat(tuple):
         padding = (longest_field_len - len(field)) + 1
         value = getattr(tuple, field)
         if type(value) == Fraction:
-            value = format_number_exact(value)
+            value = format_number_exact(value, format_args, min_decimal=2)
         str += f"{' ' * indent}{field}{' ' * padding}= {pformat(value, compact=True, width=sys.maxsize)},\n"
     str += ")"
     return str
 
 
-def write_booking(fp, account2, account1, date, description, amount, commodity):
+def write_booking(fp, account2, account1, date, description, amount, commodity, format_args):
     if isinstance(account2, str):
         account2 = ((account2, None, None),)
 
     fp.write(f"{date} {sanitize_description(description)}\n")
-    fp.write(f"  {account1}  {format_exact(amount, commodity)}\n")
+    fp.write(f"  {account1}  {format_exact(amount, commodity, format_args)}\n")
     for subaccount, subamount, subcommodity in account2:
         if subamount is None:
             fp.write(f"  {subaccount}\n")
         else:
-            fp.write(f"  {subaccount}  {format_exact(subamount, subcommodity)}\n")
+            fp.write(f"  {subaccount}  {format_exact(subamount, subcommodity, format_args)}\n")
     fp.write(f"\n")
 
-def write_assert(fp, account, date, amount, commodity):
+def write_assert(fp, account, date, amount, commodity, format_args):
     fp.write(f"{date} ASSERT\n")
-    fp.write(f"  {account}  =={format_exact(amount, commodity)}\n")
+    fp.write(f"  {account}  =={format_exact(amount, commodity, format_args)}\n")
     fp.write(f"\n")
 
-def format_exact(amount, commodity, min_decimal=None):
+def format_exact(amount, commodity, format_args, min_decimal=None):
     # This is an hledger commodity with an exchange value, i.e., VGWL @@ 1234 EUR.
     if isinstance(commodity, tuple):
         dest, value, source = commodity
-        return f"{format_exact(amount, dest, min_decimal)} @@ {format_exact(value, source, min_decimal)}"
+        return f"{format_exact(amount, dest, min_decimal, format_args)} @@ {format_exact(value, source, min_decimal, format_args)}"
 
     if min_decimal is None:
         if commodity == "EUR":
@@ -58,11 +61,11 @@ def format_exact(amount, commodity, min_decimal=None):
         else:
             min_decimal = 0
 
-    result = format_number_exact(amount=amount, min_decimal=min_decimal)
+    result = format_number_exact(amount=amount, format_args=format_args, min_decimal=min_decimal)
 
     return f"{result} {commodity}"
 
-def format_number_exact(amount, min_decimal=0):
+def format_number_exact(amount, format_args, min_decimal=0):
     if isinstance(amount, int):
         amount = Decimal(amount) / Decimal(100)
     else:
@@ -78,15 +81,15 @@ def format_number_exact(amount, min_decimal=0):
     if exponent < 0:
         if len(digits) < abs(exponent):
             digits = "0" * (abs(exponent) - len(digits)) + digits
-        digits = digits[:exponent] + "," + digits[exponent:]
-        if digits[0] == ",":
+        digits = digits[:exponent] + format_args.decimal_separator + digits[exponent:]
+        if digits[0] == format_args.decimal_separator:
             digits = "0" + digits
         if len(digits[exponent:]) < min_decimal:
             digits += "0" * (min_decimal - len(digits[exponent:]))
     else:
         digits += "0" * exponent
         if min_decimal > 0:
-            digits += "," + ("0" * min_decimal)
+            digits += format_args.decimal_separator + ("0" * min_decimal)
     result += digits
 
     return result
@@ -134,7 +137,7 @@ def parse_date_ddmmyy_without_century(statement_start_year, statement_end_year, 
     return datetime.date(year=yyyy, month=mm, day=dd)
 
 def parse_num_us(str):
-    return Fraction(str)
+    return Fraction(str.replace(",", ""))
 
 def parse_num_ch(str):
     return Fraction(str.replace("'", ""))
@@ -145,5 +148,5 @@ def parse_num_de(str):
 def parse_num_de_from_match(match):
     return parse_num_de(match[1])
 
-def parse_num_str(str):
-    return Fraction(str.replace(",", "."))
+def parse_num_str(str, decimal_separator=","):
+    return Fraction(str.replace(decimal_separator, "."))
