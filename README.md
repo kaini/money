@@ -9,11 +9,11 @@
         ```python
         from rules.std.converter.primitive import c_seq, c_if
         from rules.std.converter.complex import to_account
-        from rules.std.matcher.complex import on_regex_substr
+        from rules.std.matcher.complex import is_regex_substr
 
         def make_converter():
             return c_seq([
-                c_if(on_regex_substr(r'.*REF: 1234.*'), to_account('Expense:Food'))
+                c_if(is_regex_substr(r'.*REF: 1234.*'), to_account('Expense:Food'))
             ])
         ```
 

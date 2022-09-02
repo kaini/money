@@ -1,4 +1,5 @@
 import multiprocessing, os, shutil, datetime, configparser, importlib, collections, utils, sys, fetch_prices
+from rules.std.util import entry_id
 from rules.std.converter.complex import to_account
 from rules.data import Booking, BookingLine, assert_is_booking
 from read_rules import read_rules
@@ -23,7 +24,7 @@ def delete_output(base_path):
 
 def make_fallback_converter(format_args): 
     def fallback(entry):
-        print(f"Warning: Had to apply fallback rule to entry: {utils.namedtuple_pformat(entry, format_args)}")
+        print(f"Warning: Had to apply fallback rule to entry (id={entry_id(entry)}): {utils.namedtuple_pformat(entry, format_args)}")
         return to_account('Unknown')(entry)
     return fallback
 
