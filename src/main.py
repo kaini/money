@@ -1,5 +1,7 @@
-import multiprocessing, os, shutil, datetime, configparser, importlib, re, collections, utils, sys, fetch_prices
-from pprint import pprint
+import multiprocessing, os, shutil, datetime, configparser, importlib, collections, utils, sys, fetch_prices
+from rules.std.converter.complex import to_account
+from rules.data import Booking, BookingLine, assert_is_booking
+from read_rules import read_rules
 
 def init_parsers(base_path, config):
     parsers = dict()
@@ -18,24 +20,13 @@ def delete_output(base_path):
         shutil.rmtree(path)
     os.mkdir(path)
 
-def parse_rules(base_path, format_args):
-    rules = configparser.ConfigParser(delimiters=("=",))
-    rules.read(os.path.join(base_path, "rules.ini"), encoding="UTF-8")
 
-    result = []
-    for rule, account in rules["DEFAULT"].items():
-        parts = rule.split("$")
-        if parts[0] == "text":
-            result.append((lambda entry, regex=re.compile(parts[1], re.I | re.M | re.DOTALL): bool(regex.search(entry.text)), account))
-        else:
-            raise Exception("Unknown rule syntax " + rule)
-
+def make_fallback_converter(format_args): 
     def fallback(entry):
         print(f"Warning: Had to apply fallback rule to entry: {utils.namedtuple_pformat(entry, format_args)}")
-        return True
-    result.append((fallback, "Unbekannt"))
+        return to_account('Unknown')(entry)
+    return fallback
 
-    return result
 
 def main():
     base_path = sys.argv[1]
@@ -48,7 +39,9 @@ def main():
         format_args = utils.FormatArgs(decimal_separator=config['format']['decimal_separator'])
 
 
-    rules = parse_rules(base_path, format_args)
+    rules_file_path = os.path.join(base_path, "rules.py")
+    converter = read_rules(rules_file_path)
+    fallback_converter = make_fallback_converter(format_args=format_args)
 
     parsers = init_parsers(base_path, config)
     
@@ -100,28 +93,23 @@ def main():
             output_files[dest_file] = datetime.date(1000, 1, 1)
             for entry in entries:
                 if isinstance(entry, utils.Entry):
-                    for rule in rules:
-                        if rule[0](entry):
-                            break
-                    else:
-                        # This should be unreachable, because there is a fallback rule in rules.
-                        assert False
+                    booking = converter(entry)
 
-                    # The rule could be a compound rule (using the + operator)
-                    destination = []
-                    for component in rule[1].split("+"):
-                        component = component.strip()
-                        parts = component.split("=")
-                        if len(parts) == 1:
-                            destination.append((parts[0].strip(), None, None))
-                        else:
-                            destination.append((parts[0].strip(), utils.parse_num_str(parts[1], format_args.decimal_separator), entry.currency))
+                    if booking is None:
+                        # No rule was defined in the matcher, apply the fallback rule
+                        booking = fallback_converter(entry)
 
-                    utils.write_booking(fp, destination, entry.account, entry.date, entry.text, entry.amount, entry.currency, format_args)
+                    assert_is_booking(booking)
+                    assert booking is not None
+
+                    utils.write_booking(fp, booking, format_args)
                 elif isinstance(entry, utils.Assert):
                     utils.write_assert(fp, entry.account, entry.date, entry.amount, entry.currency, format_args)
                 elif isinstance(entry, utils.Raw):
-                    utils.write_booking(fp, entry.lines[1:], entry.lines[0][0], entry.date, entry.text, entry.lines[0][1], entry.lines[0][2], format_args)
+                    utils.write_booking(fp, Booking(date=entry.date, description=entry.text, lines = [
+                        BookingLine(account=line[0], amount=line[1], commodity=line[2])
+                        for line in entry.lines
+                    ]), format_args)
                 else:
                     raise Exception("Unknown thing in entries: " + repr(entry))
                 output_files[dest_file] = max(output_files[dest_file], entry.date)

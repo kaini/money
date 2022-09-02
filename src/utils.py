@@ -31,17 +31,15 @@ def namedtuple_pformat(tuple, format_args):
     return str
 
 
-def write_booking(fp, account2, account1, date, description, amount, commodity, format_args):
-    if isinstance(account2, str):
-        account2 = ((account2, None, None),)
-
-    fp.write(f"{date} {sanitize_description(description)}\n")
-    fp.write(f"  {account1}  {format_exact(amount, commodity, format_args)}\n")
-    for subaccount, subamount, subcommodity in account2:
-        if subamount is None:
-            fp.write(f"  {subaccount}\n")
+def write_booking(fp, booking, format_args):
+    fp.write(f"{booking.date} {sanitize_description(booking.description)}\n")
+    for line in booking.lines:
+        line_str = None
+        if line.amount is None:
+            line_str = f"  {line.account}"
         else:
-            fp.write(f"  {subaccount}  {format_exact(subamount, subcommodity, format_args)}\n")
+            line_str = f"  {line.account}  {format_exact(line.amount, line.commodity, format_args)}"
+        fp.write(line_str + "\n")
     fp.write(f"\n")
 
 def write_assert(fp, account, date, amount, commodity, format_args):
