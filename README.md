@@ -3,20 +3,20 @@
 1. Build the docker container in the folder `docker`.
 2. Create an home directory. Put this directory under version control.
 3. While the details of the file structure are up to you, I recommend the following setup.
-    * *rules.ini*: This file must exist and look like this:
+    * *rules.py*: This file must exist and export a `make_converter` function which returns a converter.
 
-        ```text
-        [DEFAULT]
-        text$levis = Aufwendungen:Alltag:Kleidung
-        text$hervis = Aufwendungen:Hobbies:Sonstiges
-        text$hm.*voesendorf = Aufwendungen:Alltag:Kleidung
-        text$wipark = Aufwendungen:Fahrtkosten:Auto:Maut und Parkgebühren
-        text$marionnaud = Aufwendungen:Alltag:Lebensmittel und Einkäufe
+        Minimal example:
+        ```python
+        from rules.std.converter.primitive import c_seq, c_if
+        from rules.std.converter.complex import to_account
+        from rules.std.matcher.complex import on_regex_substr
+
+        def make_converter():
+            return c_seq([
+                c_if(on_regex_substr(r'.*REF: 1234.*'), to_account('Expense:Food'))
+            ])
         ```
 
-        The key of each entry is a matcher, while the value of each entry is the account this should map to. Currently there is only one matcher, `text`, which is a case-insensitive regular expression contains operation.
-
-        The value might either be an account, or, might be a list of accounts if the expense/income has to be split up. For example `text$p02-1685277-4365360 = Aufwendungen:Hobbies:Cello = 268,90 + Aufwendungen:Hobbies:Computer:Hardware` posts 268.90 EUR to `Aufwendungen:Hobbies:Cello` and the rest to `Aufwendungen:Hobbies:Computer:Hardware`.
     * *config.ini*: This file must exist and look like this:
 
         ```
