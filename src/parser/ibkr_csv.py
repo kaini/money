@@ -85,7 +85,7 @@ def parse_ending_asserts(input_path, cash_account, portfolio_account, rows):
         row for row in rows if
             row['Name'] == 'Cash Report' and
             row['Type'] == 'Data' and
-            row['Currency Summary'] == 'Ending Cash'
+            row['Currency Summary'] == 'Ending Settled Cash'
     ]
     for row in ending_cash_rows:
         currency = row['Currency']
