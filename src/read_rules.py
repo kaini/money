@@ -1,7 +1,5 @@
-import utils
 import importlib.machinery
 import importlib.util
-import sys
 
 def read_rules(rules_file_path):
     module_name = 'user.rules'
