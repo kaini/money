@@ -52,26 +52,32 @@ def main():
 
     parsers = init_parsers(base_path, config)
     
-    commodity_prices = None
-    if os.path.exists(os.path.join(base_path, "output", "prices.journal")):
-        mtime = datetime.datetime.fromtimestamp(os.stat(os.path.join(base_path, "output", "prices.journal")).st_mtime)
-        if datetime.datetime.now() - mtime < datetime.timedelta(days=2):
-            with open(os.path.join(base_path, "output", "prices.journal"), "r", encoding="UTF-8") as fp:
-                commodity_prices = fp.read()
+    commodity_prices = ''
+    should_fetch_commodity_prices = True
+    prices_path_rel = os.path.join("output", "prices.journal")
+    prices_path = os.path.join(base_path, prices_path_rel)
+    if os.path.exists(prices_path):
+        with open(prices_path) as fp:
+            commodity_prices = fp.read()
+
+        mtime = datetime.datetime.fromtimestamp(os.stat(prices_path).st_mtime)
+        should_fetch_commodity_prices = datetime.datetime.now() - mtime < datetime.timedelta(days=2)
 
     delete_output(base_path)
     output_files = dict()
     
-    if not commodity_prices:
-        print("[FETCHING PRICES]")
+    if should_fetch_commodity_prices:
+        print("Fetching prices")
         alphavantage_api_key = config["prices"]["alphavantagekey"]
         price_load_entries = [[k, *v.split()] for k, v in config["prices"].items() if "." in k]
         equity_entries = [{'type': 'EQUITY', 'key': v[1], 'symbol': v[2], 'currency': v[3]} for v in price_load_entries if v[0].startswith("equity.")]
         fx_entries = [{'type': 'FX', 'from_symbol': v[1], 'to_symbol': v[2]} for v in price_load_entries if v[0].startswith("fx.")]
-        commodity_prices = fetch_prices.fetch(alphavantage_api_key, equity_entries + fx_entries, format_args)
-    with open(os.path.join(base_path, "output", "prices.journal"), "w", encoding="UTF-8") as fp:
+        new_commodity_prices = fetch_prices.fetch(alphavantage_api_key, equity_entries + fx_entries, format_args)
+        commodity_prices = merge_prices(existing_prices=commodity_prices, new_prices=new_commodity_prices)
+
+    with open(prices_path, "w", encoding="UTF-8") as fp:
         fp.write(commodity_prices)
-    output_files[os.path.join("output", "prices.journal")] = datetime.date(1000, 1, 1)
+    output_files[prices_path_rel] = datetime.date(1000, 1, 1)
 
     entries = collections.defaultdict(lambda: [])  # maps destination path to list of entries
     with multiprocessing.Pool() as pool:
@@ -124,6 +130,27 @@ def main():
         for output_file, date in sorted(output_files.items(), key=lambda i: i[1]):
             output_file = output_file[output_file.index("output") + 7:]
             fp.write("include " + output_file + "\n")
+
+
+def merge_prices(existing_prices, new_prices):
+    parse_prices = lambda rows:  [r.split(' ') for r in rows.splitlines()]
+    existing_rows = parse_prices(existing_prices)
+    new_rows = parse_prices(new_prices)
+
+    key_to_row = dict()
+    for r in existing_rows + new_rows:
+        _p, date, symbol_1, _price, symbol_2 = r
+        key = (date, symbol_1, symbol_2)
+        if key in key_to_row:
+            val = key_to_row[key]
+            if r != val:
+                # Alphavantage reports the current day and the value can, of course, vary
+                print(f'Warn: Merging prices - duplicate key {key} with mismatched value ({r} vs {val})')
+        key_to_row[key] = r
+    
+    rows = [i[1] for i in sorted(key_to_row.items(), key=lambda i: i[0])]
+    prices = '\n'.join([' '.join(r) for r in rows])
+    return prices
 
 
 if __name__ == "__main__":
