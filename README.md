@@ -3,18 +3,19 @@
 1. Build the docker container in the folder `docker`.
 2. Create an home directory. Put this directory under version control.
 3. While the details of the file structure are up to you, I recommend the following setup.
-    * *rules.py*: This file must exist and export a `make_converter` function which returns a converter.
+    * *rules/__init__.py*: This file must exist and export a `make_converter` function which returns a converter.
 
         Minimal example:
         ```python
-        from rules.std.converter.primitive import c_seq, c_if
-        from rules.std.converter.complex import to_account
-        from rules.std.matcher.complex import is_regex_substr
+        from rules.data import Booking, BookingLine
 
         def make_converter():
-            return c_seq([
-                c_if(is_regex_substr(r'.*REF: 1234.*'), to_account('Expense:Food'))
-            ])
+            def converter(entry):
+                return Booking(date=entry.date, description=entry.text, lines=[
+                    BookingLine(account=entry.account, amount=entry.amount, commodity=entry.currency),
+                    BookingLine(account='Unknown', amount=None, commodity=None),
+                ])
+            return converter
         ```
 
     * *config.ini*: This file must exist and look like this:
@@ -118,7 +119,7 @@
 2. Download new bank documents/CSV files and place them in their respective `input/*` folder. If needed, manually edit files in the `input` folder, e.g., for cash transactions.
 3. Run `main.py`.
 4. Use `git diff` and `main.py`'s output to check if everything new is correct. `hledger bal -sB` should add up to zero.
-5. If not, edit `rules.ini` and goto step 3.
+5. If not, edit `rules/__init__.py` and goto step 3.
 6. `git commit` and enjoy your new reports.
 
 Note that the Docker container does not contain hledger. I recommend to install it on your host operating system.

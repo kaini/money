@@ -1,6 +1,5 @@
 import multiprocessing, os, shutil, datetime, configparser, importlib, collections, utils, sys, fetch_prices
-from rules.std.util import entry_id
-from rules.std.converter.complex import to_account
+from rules.data import entry_id
 from rules.data import Booking, BookingLine, assert_is_booking
 from read_rules import read_rules
 
@@ -24,8 +23,12 @@ def delete_output(base_path):
 
 def make_fallback_converter(format_args): 
     def fallback(entry):
-        print(f"Warning: Had to apply fallback rule to entry (id={entry_id(entry)}): {utils.namedtuple_pformat(entry, format_args)}")
-        return to_account('Unknown')(entry)
+        print(f"Warning: Had to apply fallback rule to entry ({entry_id(entry)}): {utils.namedtuple_pformat(entry, format_args)}")
+        return Booking(date=entry.date, description=entry.text, lines=[
+            BookingLine(account=entry.account, amount=entry.amount, commodity=entry.currency),
+            BookingLine(account='Unknown', amount=None, commodity=None),
+        ])
+
     return fallback
 
 
@@ -40,8 +43,8 @@ def main():
         format_args = utils.FormatArgs(decimal_separator=config['format']['decimal_separator'])
 
 
-    rules_file_path = os.path.join(base_path, "rules.py")
-    converter = read_rules(rules_file_path)
+    rules_path = os.path.join(base_path, "rules")
+    converter = read_rules(rules_path)
     fallback_converter = make_fallback_converter(format_args=format_args)
 
     parsers = init_parsers(base_path, config)
