@@ -3,7 +3,8 @@
 1. Build the docker container in the folder `docker`.
 2. Create an home directory. Put this directory under version control.
 3. While the details of the file structure are up to you, I recommend the following setup.
-    * *rules/__init__.py*: This file must exist and export a `make_converter` function which returns a converter.
+    * *rules/\_\_init\_\_.py*: This file must exist and export a `make_converter` function which returns a converter.
+        A converter is a function that takes an `Entry` and returns a corresponding `Booking`. Their respective definitions can be seen in the example below.
 
         Minimal example:
         ```python
@@ -11,6 +12,12 @@
 
         def make_converter():
             def converter(entry):
+                # entry.source - source file of the entry
+                # entry.account - source account for the entry
+                # entry.date - date of the entry
+                # entry.text - text of the entry
+                # entry.amount - amount of the entry: this is either an integer in the smallest currency unit, a Fraction object, or a Decimal object
+                # entry.currency - the currency of the entry
                 return Booking(date=entry.date, description=entry.text, lines=[
                     BookingLine(account=entry.account, amount=entry.amount, commodity=entry.currency),
                     BookingLine(account='Unknown', amount=None, commodity=None),
@@ -20,7 +27,7 @@
 
     * *config.ini*: This file must exist and look like this:
 
-        ```
+        ```ini
         [DEFAULT]
 
         # optional formatting information

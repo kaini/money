@@ -58,7 +58,7 @@ def main():
             commodity_prices = fp.read()
 
         mtime = datetime.datetime.fromtimestamp(os.stat(prices_path).st_mtime)
-        should_fetch_commodity_prices = datetime.datetime.now() - mtime < datetime.timedelta(days=2)
+        should_fetch_commodity_prices = datetime.datetime.now() - mtime > datetime.timedelta(days=2)
 
     delete_output(base_path)
     output_files = dict()
