@@ -3,23 +3,31 @@
 1. Build the docker container in the folder `docker`.
 2. Create an home directory. Put this directory under version control.
 3. While the details of the file structure are up to you, I recommend the following setup.
-    * *rules.ini*: This file must exist and look like this:
+    * *rules/\_\_init\_\_.py*: This file must exist and export a `make_converter` function which returns a converter.
+        A converter is a function that takes an `Entry` and returns a corresponding `Booking`. Their respective definitions can be seen in the example below.
 
-        ```text
-        [DEFAULT]
-        text$levis = Aufwendungen:Alltag:Kleidung
-        text$hervis = Aufwendungen:Hobbies:Sonstiges
-        text$hm.*voesendorf = Aufwendungen:Alltag:Kleidung
-        text$wipark = Aufwendungen:Fahrtkosten:Auto:Maut und Parkgebühren
-        text$marionnaud = Aufwendungen:Alltag:Lebensmittel und Einkäufe
+        Minimal example:
+        ```python
+        from rules.data import Booking, BookingLine
+
+        def make_converter():
+            def converter(entry):
+                # entry.source - source file of the entry
+                # entry.account - source account for the entry
+                # entry.date - date of the entry
+                # entry.text - text of the entry
+                # entry.amount - amount of the entry: this is either an integer in the smallest currency unit, a Fraction object, or a Decimal object
+                # entry.currency - the currency of the entry
+                return Booking(date=entry.date, description=entry.text, lines=[
+                    BookingLine(account=entry.account, amount=entry.amount, commodity=entry.currency),
+                    BookingLine(account='Unknown', amount=None, commodity=None),
+                ])
+            return converter
         ```
 
-        The key of each entry is a matcher, while the value of each entry is the account this should map to. Currently there is only one matcher, `text`, which is a case-insensitive regular expression contains operation.
-
-        The value might either be an account, or, might be a list of accounts if the expense/income has to be split up. For example `text$p02-1685277-4365360 = Aufwendungen:Hobbies:Cello = 268,90 + Aufwendungen:Hobbies:Computer:Hardware` posts 268.90 EUR to `Aufwendungen:Hobbies:Cello` and the rest to `Aufwendungen:Hobbies:Computer:Hardware`.
     * *config.ini*: This file must exist and look like this:
 
-        ```
+        ```ini
         [DEFAULT]
 
         # optional formatting information
@@ -118,7 +126,7 @@
 2. Download new bank documents/CSV files and place them in their respective `input/*` folder. If needed, manually edit files in the `input` folder, e.g., for cash transactions.
 3. Run `main.py`.
 4. Use `git diff` and `main.py`'s output to check if everything new is correct. `hledger bal -sB` should add up to zero.
-5. If not, edit `rules.ini` and goto step 3.
+5. If not, edit `rules/__init__.py` and goto step 3.
 6. `git commit` and enjoy your new reports.
 
 Note that the Docker container does not contain hledger. I recommend to install it on your host operating system.
