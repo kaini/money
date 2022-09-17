@@ -45,17 +45,17 @@ def do_import(input_path, cash, depot, fees, gains, exchange, commodities, price
                 lines.append((gains, values.tax, "EUR"))
             if gain != 0:
                 lines.append((gains, -gain, "EUR"))
-            lines.append((depot + ":" + commodity, -values.amount, commodities[commodity.lower()]))
+            lines.append((depot + ":" + commodity, -values.amount, (commodities[commodity.lower()], buy_price * values.amount, "EUR")))
             lines.append((exchange + ":" + commodity, -buy_price * values.amount, "EUR"))
-            lines.append((exchange + ":" + commodity, values.amount, commodities[commodity.lower()]))
+            lines.append((exchange + ":" + commodity, values.amount, (commodities[commodity.lower()], buy_price * values.amount, "EUR")))
 
             return [utils.Raw(input_path, values.date, description, lines)]
         else:
             lines = []
             lines.append((cash, values.cash, "EUR"))
             lines.append((exchange + ":" + commodity, -values.cash - fees_amount, "EUR"))
-            lines.append((exchange + ":" + commodity, -values.amount, commodities[commodity.lower()]))
-            lines.append((depot + ":" + commodity, values.amount, commodities[commodity.lower()]))
+            lines.append((exchange + ":" + commodity, -values.amount, (commodities[commodity.lower()], -values.cash - fees_amount, "EUR")))
+            lines.append((depot + ":" + commodity, values.amount, (commodities[commodity.lower()], -values.cash - fees_amount, "EUR")))
             if fees_amount != 0:
                 lines.append((fees, fees_amount, "EUR"))
             return [utils.Raw(input_path, values.date, description, lines)]

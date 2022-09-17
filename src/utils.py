@@ -51,7 +51,7 @@ def format_exact(amount, commodity, format_args, min_decimal=None):
     # This is an hledger commodity with an exchange value, i.e., VGWL @@ 1234 EUR.
     if isinstance(commodity, tuple):
         dest, value, source = commodity
-        return f"{format_exact(amount, dest, min_decimal, format_args)} @@ {format_exact(value, source, min_decimal, format_args)}"
+        return f"{format_exact(amount, dest, format_args, min_decimal)} @@ {format_exact(value, source, format_args, min_decimal)}"
 
     if min_decimal is None:
         if commodity == "EUR":
