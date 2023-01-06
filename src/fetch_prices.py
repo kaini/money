@@ -14,13 +14,13 @@ def fetch(api_key, load, format_args):
 			symbol = value['symbol']
 			currency = value['currency']
 			result = requests.get(QUERY_URL, params={
-				"function": 'TIME_SERIES_DAILY',
+				"function": 'TIME_SERIES_WEEKLY',
 				"symbol": symbol,
 				"outputsize": "full",
 				"apikey": api_key
 			})
 			result = result.json()
-			for date, values in result["Time Series (Daily)"].items():
+			for date, values in result["Weekly Time Series"].items():
 				price = parse_num_us(values['4. close'])
 				output += f"P {date} {key} {format_number_exact(price, format_args, min_decimal=4)} {currency}\n"
 		elif type == 'FX':
