@@ -14,7 +14,7 @@ def fetch(api_key, load, format_args):
 			symbol = value['symbol']
 			currency = value['currency']
 			result = requests.get(QUERY_URL, params={
-				"function": 'TIME_SERIES_DAILY_ADJUSTED',
+				"function": 'TIME_SERIES_DAILY',
 				"symbol": symbol,
 				"outputsize": "full",
 				"apikey": api_key
