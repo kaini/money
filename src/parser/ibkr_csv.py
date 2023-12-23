@@ -142,6 +142,7 @@ def parse_trades(input_path, cash_account, portfolio_account, fees_account, exch
         date = parse_date(date_time.split(',')[0])
         quantity = utils.parse_num_us(row['Quantity'])
         proceeds = utils.parse_num_us(row['Proceeds'])
+        t_price = utils.parse_num_us(row['T. Price'])
         
         desc = f'{asset_category} - {data_discriminator} - {symbol}'
 
@@ -178,12 +179,19 @@ def parse_trades(input_path, cash_account, portfolio_account, fees_account, exch
             to_account = f'{cash_account}:{to_currency}'
             comm_account = f'{cash_account}:{comm_currency}'
 
-            lines = [
-                (from_account, quantity, from_currency),
-                (f'{exchange_account}:{from_currency}', -quantity, from_currency),
+            # There is an inaccuracy in the hledger balance sheets
+            # The quantity is rounded to a different precision (appears to be 8 digits) than the 9 digits used in the actual calculation
+            # This leads to mismatches between the calculated ending balance and the asserted ending balance as specified in the statement 
+            # We work around this by reverse-calculating the actual quantity and rounding to 9 digits 
+            from_amount = -round((proceeds / t_price), ndigits=9)
+            to_amount = proceeds
 
-                (to_account, proceeds, to_currency),
-                (f'{exchange_account}:{to_currency}', -proceeds, to_currency),
+            lines = [
+                (from_account, from_amount, from_currency),
+                (f'{exchange_account}:{from_currency}', -from_amount, from_currency),
+
+                (to_account, to_amount, to_currency),
+                (f'{exchange_account}:{to_currency}', -to_amount, to_currency),
 
                 (comm_account, comm_amount, comm_currency),
                 (fees_account, -comm_amount, comm_currency),
