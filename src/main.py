@@ -71,10 +71,9 @@ def main(config):
     
     if should_fetch_commodity_prices:
         print("Fetching prices")
-        alphavantage_api_key = config["prices"]["alphavantagekey"]
-        price_load_entries = [[k, *v.split()] for k, v in config["prices"].items() if "." in k]
-        equity_entries = [{'type': 'EQUITY', 'key': v[1], 'symbol': v[2], 'currency': v[3]} for v in price_load_entries if v[0].startswith("equity.")]
-        fx_entries = [{'type': 'FX', 'from_symbol': v[1], 'to_symbol': v[2]} for v in price_load_entries if v[0].startswith("fx.")]
+        alphavantage_api_key = config.prices.alphavantage_key
+        equity_entries = [{'type': 'EQUITY', 'key': v[0], 'symbol': v[1], 'currency': v[2]} for v in config.prices.equities]
+        fx_entries = [{'type': 'FX', 'from_symbol': v[0], 'to_symbol': v[1]} for v in config.prices.forex]
         new_commodity_prices = fetch_prices.fetch(alphavantage_api_key, equity_entries + fx_entries, format_args)
         commodity_prices = merge_prices(existing_prices=commodity_prices, new_prices=new_commodity_prices)
 
