@@ -152,10 +152,9 @@ def find_prices(pool, source):
             prices[subject].append((id, date, last_amount + amount, last_value * (last_amount + amount) / last_amount))
     return prices
 
-def main(pool, source, cash, depot, fees, gains, exchange, **kwargs):
+def main(pool, source, cash, depot, fees, gains, exchange, commodity_mapping):
     # Unfortunately, flatex does not have the buy price (or the gains) of a sale in its documents.
     # Therefore, I have to go through all buy/sell transactions first to find the commodities' buy-prices for each point in time.
     prices = find_prices(pool, source)
-    commodities = dict((k[4:], v) for k, v in kwargs.items() if k.startswith("wkn."))
     files = [f for f in glob.glob(os.path.join(source, "*.pdf")) if date_ok(f)]
-    return list(itertools.chain.from_iterable(pool.starmap(do_import, ((f, cash, depot, fees, gains, exchange, commodities, prices) for f in files))))
+    return list(itertools.chain.from_iterable(pool.starmap(do_import, ((f, cash, depot, fees, gains, exchange, commodity_mapping, prices) for f in files))))
