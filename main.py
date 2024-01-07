@@ -3,6 +3,8 @@ from . import utils, fetch_prices
 from .rules.data import entry_id
 from .rules.data import Booking, BookingLine, assert_is_booking
 from .read_rules import read_rules
+from .utils import FormatArgs
+
 
 def init_parsers(base_path, config):
     parsers = dict()
