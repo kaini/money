@@ -1,5 +1,6 @@
-import textract, datetime, re, utils, os, glob, itertools
+import textract, datetime, re, os, glob, itertools
 from fractions import Fraction
+from .. import utils
 
 FILENAME_RE = re.compile(r"^(\d\d\d\d)(\d\d)(\d\d)_")
 

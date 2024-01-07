@@ -1,8 +1,7 @@
-
 import collections
-import csv, re, utils, os, glob, itertools
+import csv, re, os, glob, itertools
 from datetime import datetime
-from email import feedparser
+from .. import utils
 
 DATE_RE = re.compile(r'(\d\d\d\d)-(\d\d)-(\d\d)')
 FOREX_COMM_RE = re.compile(f'Comm in (.*)')

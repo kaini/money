@@ -1,5 +1,5 @@
-import textract, re, utils, os, glob, itertools
-
+import textract, re, os, glob, itertools
+from .. import utils
 
 TABLE_HEADER_RE=re.compile(r"^\s*(Date)\s+(Text)\s+(Debit)\s+(Credit)\s+(Value)\s+(Balance)\s*$")
 DATE_RE=re.compile(r"(\d\d)\.(\d\d)\.(\d\d)") # dd.mm.yy

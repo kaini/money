@@ -1,4 +1,5 @@
-import textract, datetime, re, utils, os, glob, itertools
+import textract, datetime, re, os, glob, itertools
+from .. import utils
 
 HEADER1_RE = re.compile(r"^\s+Abrechnung.*?per\s+(\d\d)\.(\d\d)\.(\d\d\d\d)")
 HEADER2_RE = re.compile(r"^\s+zu Kartennummer\s+([0-9*]{4} [0-9*]{4} [0-9*]{4} [0-9*]{4}).*")

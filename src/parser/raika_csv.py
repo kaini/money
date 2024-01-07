@@ -1,5 +1,5 @@
-
-import csv, re, utils, os, glob, itertools
+import csv, re, os, glob, itertools
+from .. import utils
 
 DATE_RE = re.compile(r'(\d\d)\.(\d\d)\.(\d\d\d\d)')
 

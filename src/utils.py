@@ -4,7 +4,6 @@ import datetime
 import collections
 from fractions import Fraction
 from decimal import Decimal
-from collections.abc import Iterable
 import sys
 
 Entry = collections.namedtuple("Entry", ("source", "account", "date", "text", "amount", "currency"))

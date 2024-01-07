@@ -1,4 +1,5 @@
-import csv, utils, datetime, os, glob, re, itertools
+import csv, datetime, os, glob, re, itertools
+from .. import utils
 
 LINE_RE = re.compile("(\d\d?)\.(\d\d?)\.(\d\d\d\d)(.*?)([0-9.,-]+)\s*(€|EUR|E)")
 

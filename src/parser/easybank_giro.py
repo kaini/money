@@ -1,4 +1,5 @@
-import textract, datetime, re, utils, glob, os, itertools
+import textract, datetime, re, glob, os, itertools
+from .. import utils
 
 HEADER1_RE = re.compile(r"^\s+KONTOAUSZUG.*?vom\s+(\d\d)\.(\d\d)\.(\d\d\d\d)")
 HEADER2_RE = re.compile(r"^.*?(AT\d\d \d\d\d\d \d\d\d\d \d\d\d\d \d\d\d\d)\s+")

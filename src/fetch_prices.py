@@ -1,6 +1,6 @@
 import requests
 
-from utils import format_number_exact, parse_num_us
+from .utils import format_number_exact, parse_num_us
 
 QUERY_URL = "https://www.alphavantage.co/query"
 

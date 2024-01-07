@@ -1,7 +1,8 @@
-import multiprocessing, os, shutil, datetime, configparser, importlib, collections, utils, sys, fetch_prices
-from rules.data import entry_id
-from rules.data import Booking, BookingLine, assert_is_booking
-from read_rules import read_rules
+import multiprocessing, os, shutil, datetime, configparser, importlib, collections, sys
+from . import utils, fetch_prices
+from .rules.data import entry_id
+from .rules.data import Booking, BookingLine, assert_is_booking
+from .read_rules import read_rules
 
 def init_parsers(base_path, config):
     parsers = dict()

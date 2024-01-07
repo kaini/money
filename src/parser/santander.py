@@ -1,4 +1,5 @@
-import textract, datetime, re, utils, os, glob, itertools
+import textract, datetime, re, os, glob, itertools
+from .. import utils
 
 RULES = [
     ("Zinsgutschrift", "Erträge:Zinsen und Dividenden"),
