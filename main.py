@@ -1,8 +1,7 @@
-import multiprocessing, os, shutil, datetime, configparser, importlib, collections, sys
+import multiprocessing, os, shutil, datetime, importlib, collections
 from . import utils, fetch_prices
-from .rules.data import entry_id
 from .rules.data import Booking, BookingLine, assert_is_booking
-from .read_rules import read_rules
+# Intentionally imported to re-export
 from .utils import FormatArgs
 
 
@@ -22,17 +21,6 @@ def delete_output(base_path):
     if os.path.exists(path):
         shutil.rmtree(path)
     os.mkdir(path)
-
-
-def make_fallback_converter(format_args): 
-    def fallback(entry):
-        print(f"Warning: Had to apply fallback rule to entry ({entry_id(entry)}): {utils.namedtuple_pformat(entry, format_args)}")
-        return Booking(date=entry.date, description=entry.text, lines=[
-            BookingLine(account=entry.account, amount=entry.amount, commodity=entry.currency),
-            BookingLine(account='Unknown', amount=None, commodity=None),
-        ])
-
-    return fallback
 
 Config = collections.namedtuple("Config", (
     "inputs",
@@ -126,53 +114,6 @@ def main(config):
             output_file = output_file[output_file.index("output") + 7:]
             fp.write("include " + output_file + "\n")
 
-def ini_main():
-    base_path = sys.argv[1]
-
-    config = configparser.ConfigParser()
-    config.read(os.path.join(base_path, "config.ini"), encoding="UTF-8")
-
-    format_args = utils.DEFAULT_FORMAT_ARGS
-    if config.has_section('format'):
-        format_args = utils.FormatArgs(decimal_separator=config['format']['decimal_separator'])
-
-    rules_path = os.path.join(base_path, "rules")
-    converter = read_rules(rules_path)
-    fallback_converter = make_fallback_converter(format_args=format_args)
-    def converter_with_fallback(*args, **kwargs):
-        result = converter(*args, **kwargs)
-        if result is None:
-            return fallback_converter(*args, **kwargs)
-        else:
-            return result
-
-    parsers = init_parsers(base_path, config)
-    
-    equities = []
-    forex = []
-    for k, v in config["prices"].items():
-        if "." in k:
-            type, index = k.split(".")
-            if type == "equity":
-                equities.append(tuple(v.split()))
-            elif type == "fx":
-                forex.append(tuple(v.split()))
-            else:
-                assert False, "Unknown prices type"
-
-    main_config = Config(
-        inputs=[Input(name=k, parser=v) for k, v in parsers.items()],
-        prices=Prices(
-            alphavantage_key=config["prices"]["alphavantagekey"],
-            equities=equities,
-            forex=forex,
-        ),
-        converter=converter_with_fallback,
-        base_path=base_path,
-        format=format_args
-    )
-    
-    main(main_config)
 
 def merge_prices(existing_prices, new_prices):
     parse_prices = lambda rows:  [r.split(' ') for r in rows.splitlines()]
@@ -193,7 +134,3 @@ def merge_prices(existing_prices, new_prices):
     rows = [i[1] for i in sorted(key_to_row.items(), key=lambda i: i[0])]
     prices = '\n'.join([' '.join(r) for r in rows])
     return prices
-
-
-if __name__ == "__main__":
-    ini_main()
