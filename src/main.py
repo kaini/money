@@ -31,24 +31,30 @@ def make_fallback_converter(format_args):
 
     return fallback
 
+Config = collections.namedtuple("Config", (
+    "inputs",
+    "prices",
+    "converter",
+    "base_path",
+    "format",
+))
 
-def main():
-    base_path = sys.argv[1]
+Input = collections.namedtuple("input", (
+    "name",
+    "parser",
+))
 
-    config = configparser.ConfigParser()
-    config.read(os.path.join(base_path, "config.ini"), encoding="UTF-8")
+Prices = collections.namedtuple("Prices", (
+    "alphavantage_key",
+    "equities",
+    "forex",
+))
 
-    format_args = utils.DEFAULT_FORMAT_ARGS
-    if config.has_section('format'):
-        format_args = utils.FormatArgs(decimal_separator=config['format']['decimal_separator'])
-
-
-    rules_path = os.path.join(base_path, "rules")
-    converter = read_rules(rules_path)
+def main(config):
+    base_path = config.base_path
+    format_args = config.format
     fallback_converter = make_fallback_converter(format_args=format_args)
 
-    parsers = init_parsers(base_path, config)
-    
     commodity_prices = ''
     should_fetch_commodity_prices = True
     prices_path_rel = os.path.join("output", "prices.journal")
@@ -78,7 +84,8 @@ def main():
 
     entries = collections.defaultdict(lambda: [])  # maps destination path to list of entries
     with multiprocessing.Pool() as pool:
-        for name, parser in parsers.items():
+        for input in config.inputs:
+            name, parser = input.name, input.parser
             print("Parsing", name)
             for entry in parser(pool):
                 rest, filename = os.path.split(entry.source)
@@ -97,7 +104,7 @@ def main():
             output_files[dest_file] = datetime.date(1000, 1, 1)
             for entry in entries:
                 if isinstance(entry, utils.Entry):
-                    booking = converter(entry)
+                    booking = config.converter(entry)
 
                     if booking is None:
                         # No rule was defined in the matcher, apply the fallback rule
@@ -123,6 +130,47 @@ def main():
             output_file = output_file[output_file.index("output") + 7:]
             fp.write("include " + output_file + "\n")
 
+def ini_main():
+    base_path = sys.argv[1]
+
+    config = configparser.ConfigParser()
+    config.read(os.path.join(base_path, "config.ini"), encoding="UTF-8")
+
+    format_args = utils.DEFAULT_FORMAT_ARGS
+    if config.has_section('format'):
+        format_args = utils.FormatArgs(decimal_separator=config['format']['decimal_separator'])
+
+
+    rules_path = os.path.join(base_path, "rules")
+    converter = read_rules(rules_path)
+
+    parsers = init_parsers(base_path, config)
+    
+    equities = []
+    forex = []
+    for k, v in config["prices"].items():
+        if "." in k:
+            type, index = k.split(".")
+            if type == "equity":
+                equities.append(tuple(v.split()))
+            elif type == "forex":
+                forex.append(tuple(v.split()))
+            else:
+                assert False, "Unknown prices type"
+
+    main_config = Config(
+        inputs=[Input(name=k, parser=v) for k, v in parsers.items()],
+        prices=Prices(
+            alphavantage_key=config["prices"]["alphavantagekey"],
+            equities=equities,
+            forex=forex,
+        ),
+        converter=converter,
+        base_path=base_path,
+        format=format_args
+    )
+    
+    main(main_config)
 
 def merge_prices(existing_prices, new_prices):
     parse_prices = lambda rows:  [r.split(' ') for r in rows.splitlines()]
@@ -146,4 +194,4 @@ def merge_prices(existing_prices, new_prices):
 
 
 if __name__ == "__main__":
-    main()
+    ini_main()
