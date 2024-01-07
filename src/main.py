@@ -153,7 +153,7 @@ def ini_main():
             type, index = k.split(".")
             if type == "equity":
                 equities.append(tuple(v.split()))
-            elif type == "forex":
+            elif type == "fx":
                 forex.append(tuple(v.split()))
             else:
                 assert False, "Unknown prices type"
