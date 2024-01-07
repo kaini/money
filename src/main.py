@@ -53,7 +53,6 @@ Prices = collections.namedtuple("Prices", (
 def main(config):
     base_path = config.base_path
     format_args = config.format
-    fallback_converter = make_fallback_converter(format_args=format_args)
 
     commodity_prices = ''
     should_fetch_commodity_prices = True
@@ -104,14 +103,9 @@ def main(config):
             for entry in entries:
                 if isinstance(entry, utils.Entry):
                     booking = config.converter(entry)
-
                     if booking is None:
-                        # No rule was defined in the matcher, apply the fallback rule
-                        booking = fallback_converter(entry)
-
+                        continue
                     assert_is_booking(booking)
-                    assert booking is not None
-
                     utils.write_booking(fp, booking, format_args)
                 elif isinstance(entry, utils.Assert):
                     utils.write_assert(fp, entry.account, entry.date, entry.amount, entry.currency, format_args)
@@ -139,9 +133,15 @@ def ini_main():
     if config.has_section('format'):
         format_args = utils.FormatArgs(decimal_separator=config['format']['decimal_separator'])
 
-
     rules_path = os.path.join(base_path, "rules")
     converter = read_rules(rules_path)
+    fallback_converter = make_fallback_converter(format_args=format_args)
+    def converter_with_fallback(*args, **kwargs):
+        result = converter(*args, **kwargs)
+        if result is None:
+            return fallback_converter(*args, **kwargs)
+        else:
+            return result
 
     parsers = init_parsers(base_path, config)
     
@@ -164,7 +164,7 @@ def ini_main():
             equities=equities,
             forex=forex,
         ),
-        converter=converter,
+        converter=converter_with_fallback,
         base_path=base_path,
         format=format_args
     )
