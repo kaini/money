@@ -60,7 +60,9 @@ def format_exact(amount, commodity, format_args, min_decimal=None):
 
     result = format_number_exact(amount=amount, format_args=format_args, min_decimal=min_decimal)
 
-    return f"{result} {commodity}"
+    escaped_commodity = escape_commodity(commodity)
+
+    return f"{result} {escaped_commodity}"
 
 def format_number_exact(amount, format_args, min_decimal=0):
     if isinstance(amount, int):
@@ -90,6 +92,17 @@ def format_number_exact(amount, format_args, min_decimal=0):
     result += digits
 
     return result
+
+def escape_commodity(commodity):
+    # > If the commodity name contains non-letters (spaces, numbers, or punctuation), you must always write it inside double quotes ("green apples", "ABC123").
+    # https://hledger.org/1.32/hledger.html
+
+    # This is not completely sound under various edge cases (e.g. quotes in the commodity names, ...)
+    needs_quoting = not re.match(r"^[a-zA-Z]*$", commodity)
+    if needs_quoting:
+        return f'"{commodity}"'
+    else:
+        return commodity
 
 def sanitize_description(text):
     return text.replace('\r\n', ' | ').replace('\r', ' | ').replace('\n', ' | ')
