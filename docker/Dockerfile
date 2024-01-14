@@ -10,4 +10,4 @@ RUN cd /usr/local/bin \
     && mv hledger-linux-x64 hledger && mv hledger-ui-linux-x64 hledger-ui && mv hledger-web-linux-x64 hledger-web \
     && chmod +x hledger hledger-ui hledger-web
 
-RUN pip3 install requests textract
+RUN pip3 install requests textract urwid thefuzz

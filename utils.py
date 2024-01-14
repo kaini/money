@@ -92,7 +92,7 @@ def format_number_exact(amount, format_args, min_decimal=0):
     return result
 
 def sanitize_description(text):
-    return text.replace('\r\n', ' | ').replace('\r', ' | ').replace('\n', ' | ')
+    return text.replace('\r\n', ' | ').replace('\r', ' | ').replace('\n', ' | ').strip()
 
 def format_date(date):
     return str(date)

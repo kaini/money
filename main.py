@@ -1,4 +1,4 @@
-import multiprocessing, os, shutil, datetime, importlib, collections
+import multiprocessing, os, shutil, datetime, importlib, collections, dataclasses
 from . import utils, fetch_prices
 from .rules.data import Booking, BookingLine, assert_is_booking
 # Intentionally imported to re-export
@@ -22,13 +22,15 @@ def delete_output(base_path):
         shutil.rmtree(path)
     os.mkdir(path)
 
-Config = collections.namedtuple("Config", (
-    "inputs",
-    "prices",
-    "converter",
-    "base_path",
-    "format",
-))
+@dataclasses.dataclass
+class Config:
+    inputs: any
+    prices: any
+    converter: any
+    base_path: any
+    format: FormatArgs
+    unassigned_handler: any = None
+    fallback_handler: any = None
 
 Input = collections.namedtuple("input", (
     "name",
@@ -40,6 +42,42 @@ Prices = collections.namedtuple("Prices", (
     "equities",
     "forex",
 ))
+
+def assign(converter, format_args, entries):
+    unassigned_entries = []
+    assigned_entries = {}
+    writes = {}
+    output_files = {}
+    for dest_file, entries in entries.items():
+        writes[dest_file] = []
+        output_files[dest_file] = datetime.date(1000, 1, 1)
+        for entry in entries:
+            if isinstance(entry, utils.Entry):
+                booking = converter(entry)
+                if booking is None:
+                    unassigned_entries.append(entry)
+                else:
+                    assert_is_booking(booking)
+                    assigned_entries[entry] = booking
+                    writes[dest_file].append(lambda fp, booking=booking: utils.write_booking(fp, booking, format_args))
+            elif isinstance(entry, utils.Assert):
+                writes[dest_file].append(lambda fp, entry=entry: utils.write_assert(fp, entry.account, entry.date, entry.amount, entry.currency, format_args))
+            elif isinstance(entry, utils.Raw):
+                writes[dest_file].append(lambda fp, entry=entry: utils.write_booking(fp, Booking(date=entry.date, description=entry.text, lines = [
+                    BookingLine(account=line[0], amount=line[1], commodity=line[2])
+                    for line in entry.lines
+                ]), format_args))
+            else:
+                raise Exception("Unknown thing in entries: " + repr(entry))
+            output_files[dest_file] = max(output_files[dest_file], entry.date)
+    return unassigned_entries, assigned_entries, writes, output_files
+
+def write(writes, file_order):
+    for dest_file, writes in sorted(writes.items(), key=lambda e: file_order[e[0]]):
+        os.makedirs(os.path.dirname(dest_file), exist_ok=True)
+        with open(dest_file, "w", encoding="UTF-8") as fp:
+            for write in writes:
+                write(fp)
 
 def main(config):
     base_path = config.base_path
@@ -57,7 +95,7 @@ def main(config):
         should_fetch_commodity_prices = datetime.datetime.now() - mtime > datetime.timedelta(days=2)
 
     delete_output(base_path)
-    output_files = dict()
+    all_output_files = dict()
     
     if should_fetch_commodity_prices:
         print("Fetching prices")
@@ -69,7 +107,7 @@ def main(config):
 
     with open(prices_path, "w", encoding="UTF-8") as fp:
         fp.write(commodity_prices)
-    output_files[prices_path_rel] = datetime.date(1000, 1, 1)
+    all_output_files[prices_path_rel] = datetime.date(1000, 1, 1)
 
     entries = collections.defaultdict(lambda: [])  # maps destination path to list of entries
     with multiprocessing.Pool() as pool:
@@ -87,28 +125,30 @@ def main(config):
                 destination = os.path.join(base_path, "output", directory, filename)
                 entries[destination].append(entry)
 
-    for dest_file, entries in entries.items():
-        os.makedirs(os.path.dirname(dest_file), exist_ok=True)
-        with open(dest_file, "w", encoding="UTF-8") as fp:
-            output_files[dest_file] = datetime.date(1000, 1, 1)
-            for entry in entries:
-                if isinstance(entry, utils.Entry):
-                    booking = config.converter(entry)
-                    if booking is None:
-                        continue
-                    assert_is_booking(booking)
-                    utils.write_booking(fp, booking, format_args)
-                elif isinstance(entry, utils.Assert):
-                    utils.write_assert(fp, entry.account, entry.date, entry.amount, entry.currency, format_args)
-                elif isinstance(entry, utils.Raw):
-                    utils.write_booking(fp, Booking(date=entry.date, description=entry.text, lines = [
-                        BookingLine(account=line[0], amount=line[1], commodity=line[2])
-                        for line in entry.lines
-                    ]), format_args)
-                else:
-                    raise Exception("Unknown thing in entries: " + repr(entry))
-                output_files[dest_file] = max(output_files[dest_file], entry.date)
+    # Assign all entries with the known converter
+    unassigned_entries, assigned_entries, writes, output_files = assign(config.converter, format_args, entries)
 
+    # If an unassigned handler is set, pass all not-converted entries to the handler.
+    # Then run assign again. It is assumed, that the unassigned handler did change the converter.
+    # Therefore, this should in the best case reduce the number of unassigned entries.
+    if len(unassigned_entries) > 0 and config.unassigned_handler:
+        print(f"Calling unassigned handler for {len(unassigned_entries)} unassigned entries.")
+        config.unassigned_handler(unassigned_entries, assigned_entries)
+        unassigned_entries, assigned_entries, writes, output_files = assign(config.converter, format_args, entries)
+
+    # If the user wants still unassigned entries to be booked with a fallback rule this will be applied now.
+    # This can be used to assign all unassigned entries to an "Unknown" account, without removing them from
+    # being eligible for the unassigned handler in the next run.
+    if len(unassigned_entries) > 0 and config.fallback_handler:
+        print(f"Calling fallback handler for {len(unassigned_entries)} unassigned entries.")
+        unassigned_entries, assigned_entries, writes, output_files = assign(lambda entry: config.converter(entry) or config.fallback_handler(entry), format_args, entries)
+
+    # Finally write the output files ...
+    write(writes, output_files)
+
+    # ... and the root journal referencing all output files.
+    for file, date in output_files.items():
+        all_output_files[file] = date
     with open(os.path.join(base_path, "output", "root.journal"), "w", encoding="UTF-8") as fp:
         for output_file, date in sorted(output_files.items(), key=lambda i: i[1]):
             output_file = output_file[output_file.index("output") + 7:]
