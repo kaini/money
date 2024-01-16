@@ -150,7 +150,7 @@ def main(config):
     for file, date in output_files.items():
         all_output_files[file] = date
     with open(os.path.join(base_path, "output", "root.journal"), "w", encoding="UTF-8") as fp:
-        for output_file, date in sorted(output_files.items(), key=lambda i: i[1]):
+        for output_file, date in sorted(all_output_files.items(), key=lambda i: i[1]):
             output_file = output_file[output_file.index("output") + 7:]
             fp.write("include " + output_file + "\n")
 
