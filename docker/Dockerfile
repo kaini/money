@@ -1,6 +1,6 @@
 FROM debian:11.3
 RUN apt-get update \
-    && apt-get install -yy python3 python3-pip python3-dev libxml2-dev libxslt1-dev antiword unrtf poppler-utils tesseract-ocr flac ffmpeg lame libmad0 libsox-fmt-mp3 sox libjpeg-dev swig libpulse-dev
+    && apt-get install -yy python3 python3-pip python3-dev libxml2-dev libxslt1-dev antiword unrtf poppler-utils tesseract-ocr flac ffmpeg lame libmad0 libsox-fmt-mp3 sox libjpeg-dev swig libpulse-dev firefox-esr
 
 RUN cd /usr/local/bin \
     && apt-get update && apt-get install -yy curl unzip \
@@ -10,4 +10,4 @@ RUN cd /usr/local/bin \
     && mv hledger-linux-x64 hledger && mv hledger-ui-linux-x64 hledger-ui && mv hledger-web-linux-x64 hledger-web \
     && chmod +x hledger hledger-ui hledger-web
 
-RUN pip3 install requests textract urwid thefuzz
+RUN pip3 install requests textract urwid thefuzz selenium
