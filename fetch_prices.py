@@ -16,7 +16,10 @@ def fetch(api_key, load, format_args):
 			result = requests.get(QUERY_URL, params={
 				"function": 'TIME_SERIES_DAILY',
 				"symbol": symbol,
-				"outputsize": "full",
+				# Full is only available on the premium plan
+				# Compact gives us 100 datapoints (~3 months)
+				# Given that we keep old datapoints and merge them with the new ones, this should be good enough in practice (as long as we never need historical price data)
+				"outputsize": "compact",
 				"apikey": api_key
 			})
 			result = result.json()
