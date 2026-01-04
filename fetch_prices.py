@@ -1,4 +1,5 @@
 import requests
+import time
 
 from .utils import format_number_exact, parse_num_us, escape_commodity
 
@@ -42,4 +43,8 @@ def fetch(api_key, load, format_args):
 				output += f"P {date} {escape_commodity(from_symbol)} {format_number_exact(price, format_args, min_decimal=4)} {escape_commodity(to_symbol)}\n"
 		else:
 			assert False, "Unknown type"
+
+		# Sleep for 1s between loads, per the rate limits imposed on Alphavantage's free plan
+		time.sleep(1)
+
 	return output
